@@ -9,5 +9,11 @@
 		"Require": {
 			"micro": ">=2.0"
 		}
+	}, {
+		"Version": "1.0.1",
+		"Url": "https://github.com/MasFlam/jlabbrev/archive/v1.0.1.zip",
+		"Require": {
+			"micro": ">=2.0"
+		}
 	}]
 }]
