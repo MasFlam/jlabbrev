@@ -16,9 +16,5 @@ Writing `\<abbrev>` and hitting `<tab>` will do one of the following:
 * Otherwise, the tab will be inserted
 
 # Installation
-Until the plugin gets onto
-[the official plugin channel](https://github.com/micro-editor/plugin-channel),
-the you can install it by `cd`ing into your `~/.config/micro/plug`
-and `git clone`ing this repository.  
-If jlabbrev ever gets onto the official plugin channel, the way
-to install it will be running `micro -plugin install jlabbrev`.
+As the plugin is in[the official plugin channel](https://github.com/micro-editor/plugin-channel),
+you can install it by running `micro -plugin install jlabbrev` in your terminal.
