@@ -1,5 +1,6 @@
 VERSION = "1.0.1"
 
+config = import("micro/config")
 buffer = import("micro/buffer")
 util = import("micro/util")
 
@@ -2503,6 +2504,10 @@ ABBREVS["bsansy"] = "𝘆"
 
 
 
+function preinit()
+	config.RegisterCommonOption("jlabbrev", "enable", true)
+end
+
 function get_abbrev(buf)
 	local cur = -buf:GetActiveCursor().Loc  -- "-" to dereference, see autoclose.lua line 32
 	local start = buffer.Loc(0, cur.Y)
@@ -2534,6 +2539,11 @@ end
 
 function preInsertTab(bp)
 	local buf = bp.Buf
+
+	if not buf.Settings["jlabbrev.enable"] then
+		return true
+	end
+
 	local abbrev, match = get_abbrev(buf)
 	if not abbrev then return true end
 
