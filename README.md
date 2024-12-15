@@ -15,6 +15,16 @@ Writing `\<abbrev>` and hitting `<tab>` will do one of the following:
 * If `<abbrev>` if a prefix of an abbreviation, autocompletion suggestion takes place
 * Otherwise, the tab will be inserted
 
+You can disable the above behavior completely by changing the `jlabbrev.enable` option to `false`.
+This option can be set on a per-buffer basis, so you can for example enable/disable the plugin
+just for a specific file type or extension in your `settings.json`:
+```json
+	"jlabbrev.enable": false,
+	"ft:julia": {
+		"jlabbrev.enable": true
+	}
+```
+
 # Installation
 As the plugin is in [the official plugin channel](https://github.com/micro-editor/plugin-channel),
 you can install it by running `micro -plugin install jlabbrev` in your terminal.
