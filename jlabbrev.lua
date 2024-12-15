@@ -1,5 +1,8 @@
 VERSION = "1.0.1"
 
+buffer = import("micro/buffer")
+util = import("micro/util")
+
 local ABBREVS = {}
 ABBREVS["1/8"] = "⅛"
 ABBREVS["bscra"] = "𝓪"
@@ -2500,99 +2503,45 @@ ABBREVS["bsansy"] = "𝘆"
 
 
 
-local lastBackslashX = -1
-local lastBackslashY = -1
-
-function cplen(c)
-	if c >= 192 and c < 224 then
-		return 2
-	elseif c >= 224 and c < 240 then
-		return 3
-	elseif c >= 240 and c < 248 then
-		return 4
+function get_abbrev(buf)
+	local cur = -buf:GetActiveCursor().Loc  -- "-" to dereference, see autoclose.lua line 32
+	local start = buffer.Loc(0, cur.Y)
+	local match, found = buf:FindNext("\\\\[^\\\\\\s]+", start, cur, cur, false, true)
+	if found and match[2] == cur then
+		local abbrev = util.String(buf:Substr(match[1]:Move(1, buf), match[2]))
+		return abbrev, match
 	end
-	return 1
-end
-
--- 1-based, [b, e] inclusive range
-function utf8substring(s, b, e)
-	local accum = ""
-	local pos = 1
-	local i = 1
-	
-	while i <= #s do
-		local c = string.byte(string.sub(s, i, i))
-		
-		if pos > e then
-			break
-		end
-		
-		if pos >= b then
-			accum = accum .. string.sub(s, i, i + cplen(c) - 1)
-		end
-		
-		i = i + cplen(c)
-		pos = pos + 1
-	end
-	
-	return accum
 end
 
 function abbrevCompleter(buf)
-	local cur = buf:GetActiveCursor()
-	
-	local completions = {}
-	local suggestions = {}
-	
-	if lastBackslashX ~= -1 and cur.X - lastBackslashX > 0 and lastBackslashY == cur.Y then
-		local curLine = buf:Line(cur.Y)
-		local abbrev = utf8substring(curLine, lastBackslashX + 1, cur.X)
-		
-		for a, s in pairs(ABBREVS) do
-			local i, j = string.find(a, abbrev, 1, true)
-			if i == 1 then
-				suggestions[#suggestions+1] = a
-				completions[#completions+1] = string.sub(a, j + 1)
+	local completions, suggestions = {}, {}
+
+	local abbrev = get_abbrev(buf)
+	if abbrev then
+		for a in pairs(ABBREVS) do
+			if string.find(a, abbrev, 1, true) == 1 then
+				table.insert(suggestions, a)
 			end
 		end
+		table.sort(suggestions)
+		for _, a in ipairs(suggestions) do
+			table.insert(completions, string.sub(a, #abbrev+1))
+		end
 	end
-	
+
 	return completions, suggestions
 end
 
-function onRune(bp, r)
-	if r == "\\" then
-		lastBackslashX = bp.Cursor.X
-		lastBackslashY = bp.Cursor.Y
-	elseif lastBackslashX == bp.Cursor.X then
-		lastBackslashX = lastBackslashX + 1
-	end
-end
-
 function preInsertTab(bp)
-	if lastBackslashX ~= -1 and bp.Cursor.X - lastBackslashX > 0 and lastBackslashY == bp.Cursor.Y then
-		local curLine = bp.Buf:Line(bp.Cursor.Y)
-		local abbrev = utf8substring(curLine, lastBackslashX + 1, bp.Cursor.X)
-		local substitution = ABBREVS[abbrev]
-		
-		if substitution ~= nil then
-			local abbrevlen = bp.Cursor.X - lastBackslashX
-			
-			-- +1 for the backslash
-			for i = 1,abbrevlen+1 do
-				bp:Backspace()
-			end
-			
-			-- the `-` is here to dereference a pointer, blah blah
-			-- look at the autoclose plugin (autoclose.lua, line 32)
-			bp.Buf:Insert(-bp.Cursor.Loc, substitution)
-			
-			return false
-		else
-			if bp.Buf:Autocomplete(abbrevCompleter) then
-				return false
-			end
-		end
+	local buf = bp.Buf
+	local abbrev, match = get_abbrev(buf)
+	if not abbrev then return true end
+
+	local substitution = ABBREVS[abbrev]
+	if substitution then
+		buf:Replace(match[1], match[2], substitution)
+		return false
+	else
+		return not buf:Autocomplete(abbrevCompleter)
 	end
-	return true
 end
