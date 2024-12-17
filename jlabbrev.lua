@@ -2537,10 +2537,10 @@ function abbrevCompleter(buf)
 	return completions, suggestions
 end
 
-function preInsertTab(bp)
+function preAutocomplete(bp)
 	local buf = bp.Buf
 
-	if not buf.Settings["jlabbrev.enable"] then
+	if not buf.Settings["jlabbrev.enable"] or buf.HasSuggestions then
 		return true
 	end
 
@@ -2552,6 +2552,12 @@ function preInsertTab(bp)
 		buf:Replace(match[1], match[2], substitution)
 		return false
 	else
-		return not buf:Autocomplete(abbrevCompleter)
+		completions, suggestions = abbrevCompleter(buf)
+		if #suggestions > 0 then
+			buf.Completions, buf.Suggestions = completions, suggestions
+			buf.HasSuggestions = true
+			buf.CurSuggestion = -1
+		end
+		return true
 	end
 end
